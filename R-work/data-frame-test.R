@@ -35,7 +35,6 @@ colnames(df6)[2] = "d"
 
 colnames(df6)[3] = "n"
 
-
 dataSet = fundata(input=df6, 
                        alpha=0.95, 
                        alpha2=0.997, 

@@ -42,6 +42,22 @@ install.packages("RMariaDB")
 # 
 # 
 
+library("RMariaDB");
+
+mydb = dbConnect(MySQL(), user='root', password='abcd1234!', host='localhost')
+
+dbDisconnect(mydb)
+
+
+install.packages("RMySQL")
+library(RMySQL)
+mydb = dbConnect(MySQL(), user='root', password='abcd1234!', host='localhost')
+
+
+
+
+
+
 install.packages("rjson")
 
 ###Funnel Plot###
