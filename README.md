@@ -4,7 +4,7 @@
 # R
 ## What is R?
 
-R is an open source statistical computing language. Along with Python, it is now a standard a data science and analytics.
+R is an open source statistical computing language. Along with Python, it is now a standard in data science and analytics.
 
 See (About R)[https://www.r-project.org/about.html]
 
