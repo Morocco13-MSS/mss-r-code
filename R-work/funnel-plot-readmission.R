@@ -52,7 +52,7 @@ df3 = df[keeps]
 #231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
 #get all patients with that question and died
 #?? change to 5 for valeur_item
-deathsbyMD=df3[which(df3$id_item==231&df3$valeur_item=='5'),]
+deathsbyMD=df3[which(df3$id_item==170&df3$valeur_item=='1'),]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 deathsbyMD2=deathsbyMD[!duplicated(deathsbyMD),]
 keeps=c("valeur_item","id_patient")
@@ -97,7 +97,7 @@ dataSet = fundata(input=final4,
                   alpha2=0.80, 
                   benchmark=op,
                   method='approximate', 
-                  step=1)
+                  step=0.1)
 
 
 funnelPlot = funplot(input=final4, 
