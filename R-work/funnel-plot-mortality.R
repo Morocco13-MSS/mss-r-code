@@ -1,4 +1,5 @@
-rm(list = ls())
+#remove workspace EXCEPT input from nodeJS r-script
+rm(list = ls()[which(ls()!="input")])
 
 library(needs)
 needs(RMySQL)
@@ -6,11 +7,18 @@ needs(jsonlite)
 needs(dplyr)
 needs(funnelR)
 
-#?? change below
-#start_date=paste('"',input[[1]],'"',sep="")
-#end_date=paste('"',input[[2]],'"',sep="")
-start_date = '"2018-01-01"'
-end_date = '"2019-01-01"'
+##??remove the below
+# startDate = '"2018-01-01"'
+# endDate = '"2019-01-01"'
+# formType = '"E"'
+# userLevel = 3
+# userId = 2
+
+startDate=paste('"',input[[1]],'"',sep="")
+endDate=paste('"',input[[2]],'"',sep="")
+formType = paste('"',input[[3]],'"',sep="")
+userLevel = input[[4]]
+userId = input[[5]]
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -35,9 +43,21 @@ sapply(df,class)
 #inputs from NodeJS will fill in the where conditions below for date range, unit, organ, curative, completed forms
 # don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
 #i don't think we should filter by date either initially in the beginning
-sqlQuery=paste("select * from formulaire_item fi  join formulaire f on f.id = fi.id_formulaire join patient p on p.id = f.id_patient join organe o on o.id = f.id_organe join item i on fi.id_item = i.id where f.date_creation BETWEEN ",start_date," AND ",end_date,sep="")
+sqlQuery=paste("select * from formulaire_item fi
+               join formulaire f on f.id = fi.id_formulaire
+               join patient p on p.id = f.id_patient
+               join organe o on o.id = f.id_organe
+               join item i on fi.id_item = i.id
+               join medecin m on fi.valeur_item =m.id
+               and i.intitule= 'Opérateur1'
+               join service s on s.id = m.id_service
+               join utilisateur u on u.doctorCode = m.doctorCode
+               where f.date_creation BETWEEN",startDate,"AND",endDate,
+               "AND","o.code=",formType,
+               sep=" ")
+sqlQuery
 df=dbGetQuery(mydb,sqlQuery)
-#??need to put this back into the query above...join medecin m on fi.valeur_item =m.id and i.intitule= 'Opérateur1' join service s on s.id = m.id_service where i.code = 'q99_item' and fi.valeur_item = 1 and o.code= 'E' and s.id='3'
+nrow(df)
 
 
 ###Clean Data###
@@ -111,5 +131,4 @@ dataSet = fundata(input=final4,
 
 
 #funnelPlot = funplot(input=final4,  fundata=dataSet)
-
-
+# 
