@@ -1,4 +1,5 @@
-rm(list = ls())
+#remove workspace EXCEPT input from nodeJS r-script
+rm(list = ls()[which(ls()!="input")])
 
 library(needs)
 needs(DBI)
@@ -12,15 +13,15 @@ mydb = dbConnect(MySQL(), user='root', password='abcd1234!', host='localhost')
 dbExecute(mydb, "use mssDB")
 
 ##??remove the below
-# startDate = '"2018-01-01"'
-# endDate = '"2019-01-01"'
-# formType = '"E"'
-# userLevel = '0'
-# userId = ""
+startDate = '"2018-01-01"'
+endDate = '"2019-01-01"'
+formType = '"E"'
+userLevel = 3
+userId = 2
 
-# startDate = input[[1]]
-# endDate = input[[2]]
-# formType = input[[3]]
+# startDate=paste('"',input[[1]],'"',sep="")
+# endDate=paste('"',input[[2]],'"',sep="")
+# formType = paste('"',input[[3]],'"',sep="")
 # userLevel = input[[4]]
 # userId = input[[5]]
 
@@ -53,6 +54,7 @@ df4=df[which(df$id_item=='34'&df$valeur_item=='999'),]
 missing=length(unique(df4$id_patient))
 
 result = data.frame(adherent, nonadherent, total, missing)
+
 #result = toJSON(result,auto_unbox = FASL)
 #temp =colnames(result)
 #result = reshape(result, direction="long",varying=temp,timevar="type",times=temp,v.names="count")
