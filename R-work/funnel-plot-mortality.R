@@ -8,17 +8,19 @@ needs(dplyr)
 needs(funnelR)
 
 ##??remove the below
-# startDate = '"2018-01-01"'
-# endDate = '"2019-01-01"'
-# formType = '"E"'
-# userLevel = 3
-# userId = 2
+startDate = '"2018-01-01"'
+endDate = '"2019-01-01"'
+formType = '"E"'
+userLevel = 2
+userId = 8
+#plotType = "scatter"
 
-startDate=paste('"',input[[1]],'"',sep="")
-endDate=paste('"',input[[2]],'"',sep="")
-formType = paste('"',input[[3]],'"',sep="")
-userLevel = input[[4]]
-userId = input[[5]]
+# startDate=paste('"',input[[1]],'"',sep="")
+# endDate=paste('"',input[[2]],'"',sep="")
+# formType = paste('"',input[[3]],'"',sep="")
+# userLevel = input[[4]]
+# userId = input[[5]]
+plotType = input[[6]]
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -43,31 +45,36 @@ sapply(df,class)
 #inputs from NodeJS will fill in the where conditions below for date range, unit, organ, curative, completed forms
 # don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
 #i don't think we should filter by date either initially in the beginning
-sqlQuery=paste("select * from formulaire_item fi
-               join formulaire f on f.id = fi.id_formulaire
-               join patient p on p.id = f.id_patient
-               join organe o on o.id = f.id_organe
-               join item i on fi.id_item = i.id
-               join medecin m on fi.valeur_item =m.id
-               and i.intitule= 'Opérateur1'
-               join service s on s.id = m.id_service
-               join utilisateur u on u.doctorCode = m.doctorCode
-               where f.date_creation BETWEEN",startDate,"AND",endDate,
-               "AND","o.code=",formType,
-               sep=" ")
-sqlQuery
+sqlQuery=paste("select * from patient p 
+                join formulaire f on p.id = f.id_patient
+                join formulaire_item fi on fi.id_formulaire= f.id 
+                join item i on  i.id = fi.id_item
+                join organe o on o.id = f.id_organe
+                join medecin m
+                on exists
+                (select * from item i
+                join formulaire_item fi on fi.id_item = i.id
+                where i.intitule = 'Opérateur1'
+                and m.id=fi.valeur_item)
+                join service s on s.id = m.id_service
+                join utilisateur u on u.doctorCode = m.doctorCode",
+               "where f.date_creation BETWEEN",startDate,"AND",endDate,
+               "AND","o.code=",formType,sep=" ")
+#and i.intitule= 'Opérateur1'
+cat(sqlQuery)
 df=dbGetQuery(mydb,sqlQuery)
+#coerce distinct column names since there is overlap in column names, this will append .1, .2, etc to overlapping column names
+df=data.frame(df,check.names = TRUE)
 nrow(df)
 
 
 ###Clean Data###
 
 ##get total number of patients per doctor
-keeps=c("valeur_item","id_patient","id_item")
+keeps=c("valeur_item","id_patient","intitule")
 df2 = df[keeps]
-#83	q83_item	Opérateur1
 #first create data frame to get total patients per doctor
-patByMd = df2[which(df2$id_item==83),]
+patByMd = df2[which(df2$intitule=='Opérateur1'),]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 patByMd2=patByMd[!duplicated(patByMd),]
 keeps=c("valeur_item","id_patient")
@@ -77,12 +84,12 @@ colnames(patByMd3) = c("id_medecin","id_patient")
 
 
 ##get number of deaths per doctor
-keeps=c("valeur_item","id_patient","id_item")
+keeps=c("valeur_item","id_patient","intitule")
 df3 = df[keeps]
 #231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
 #get all patients with that question and died
 #?? change to 5 for valeur_item
-deathsbyMD=df3[which(df3$id_item==231&df3$valeur_item=='5'),]
+deathsbyMD=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"&df3$valeur_item=='5'),]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 deathsbyMD2=deathsbyMD[!duplicated(deathsbyMD),]
 keeps=c("valeur_item","id_patient")
@@ -129,6 +136,61 @@ dataSet = fundata(input=final4,
                   method='approximate',
                   step=1)
 
+# funnelPlot = funplot(input=final4,  fundata=dataSet)
+# funnelPlot
 
-#funnelPlot = funplot(input=final4,  fundata=dataSet)
-# 
+###Format for NodeJS###
+scatterPlot = final4
+keeps = c("d","n")
+scatterPlot=scatterPlot[keeps]
+colnames(scatterPlot) = c("x","y")
+
+dataSet2 = dataSet
+# colnames(dataSet2)[which(colnames(dataSet2)=="benchmark")]="y_b"
+colnames(dataSet2)[which(colnames(dataSet2)=="d")]="x"
+# colnames(dataSet2)[which(colnames(dataSet2)=="up")]="y_u"
+# colnames(dataSet2)[which(colnames(dataSet2)=="lo")]="y_l"
+# colnames(dataSet2)[which(colnames(dataSet2)=="up2")]="y_u2"
+# colnames(dataSet2)[which(colnames(dataSet2)=="lo2")]="y_l2"
+
+keeps=c("x","benchmark")
+benchmarkPlot = dataSet2[keeps]
+colnames(benchmarkPlot)[which(colnames(benchmarkPlot)=="benchmark")]="y"
+
+keeps=c("x","up")
+upPlot = dataSet2[keeps]
+colnames(upPlot)[which(colnames(upPlot)=="up")]="y"
+
+keeps=c("x","lo")
+loPlot = dataSet2[keeps]
+colnames(loPlot)[which(colnames(loPlot)=="lo")]="y"
+
+keeps=c("x","up2")
+up2Plot = dataSet2[keeps]
+colnames(up2Plot)[which(colnames(up2Plot)=="up2")]="y"
+
+keeps=c("x","lo2")
+lo2Plot = dataSet2[keeps]
+colnames(lo2Plot)[which(colnames(lo2Plot)=="lo2")]="y"
+
+
+
+
+if(plotType=="scatter") {
+  scatterPlot
+  } else if(plotType=="benchmark") {
+  benchmarkPlot
+  } else if(plotType=="up") {
+  upPlot
+  } else if(plotType=="lo") {
+  loPlot
+  } else if(plotType=="up2") {
+  up2Plot
+  } else if(plotType=="lo2") {
+  lo2Plot
+  }
+
+
+
+
+
