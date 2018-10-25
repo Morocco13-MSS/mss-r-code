@@ -1,3 +1,5 @@
+rm(list = ls())
+
 library(RMySQL)
 library(jsonlite)
 library(needs)
@@ -22,12 +24,16 @@ r=as.data.frame(dbReadTable(mydb,"role"))
 s=as.data.frame(dbReadTable(mydb,"service"))
 u=as.data.frame(dbReadTable(mydb,"utilisateur"))
 
+start_date = '"2018-01-01"'
+end_date = '"2019-01-01"'
+
 ###Extract Data###
 
 #inputs from NodeJS will fill in the where conditions below for date range, unit, organ, curative, completed forms
 # don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
 #i don't think we should filter by date either initially in the beginning
-df=dbGetQuery(mydb,"select * from formulaire_item fi  join formulaire f on f.id = fi.id_formulaire join patient p on p.id = f.id_patient join organe o on o.id = f.id_organe join item i on fi.id_item = i.id")
+sqlQuery=paste("select * from formulaire_item fi  join formulaire f on f.id = fi.id_formulaire join patient p on p.id = f.id_patient join organe o on o.id = f.id_organe join item i on fi.id_item = i.id where f.date_creation BETWEEN ",start_date," AND ",end_date,sep="")
+df=dbGetQuery(mydb,sqlQuery)
 #??need to put this back into the query above...join medecin m on fi.valeur_item =m.id and i.intitule= 'Opérateur1' join service s on s.id = m.id_service where i.code = 'q99_item' and fi.valeur_item = 1 and f.date_creation BETWEEN 2018-01-01 AND 2017-01-01 and o.code = 'E' and s.id='3'
 
 ###Clean Data###
