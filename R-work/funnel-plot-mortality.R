@@ -1,8 +1,11 @@
-library(RMySQL)
-library(jsonlite)
 library(needs)
-library(dplyr)
-library(funnelR)
+needs(RMySQL)
+needs(jsonlite)
+needs(dplyr)
+needs(funnelR)
+
+start_date=paste('"',input[[1]],'"',sep="")
+end_date=paste('"',input[[2]],'"',sep="")
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -11,24 +14,25 @@ mydb = dbConnect(MySQL(), user='root', password='abcd1234!', host='localhost')
 dbExecute(mydb, "use mssDB")
 sapply(df,class)
 
-c=as.data.frame(dbReadTable(mydb,"commentaire"))
-cr=as.data.frame(dbReadTable(mydb,"commentaire_reponse"))
-f=as.data.frame(dbReadTable(mydb,"formulaire"))
-fh=as.data.frame(dbReadTable(mydb,"formulaire_historique"))
-i=as.data.frame(dbReadTable(mydb,"item"))
-m=as.data.frame(dbReadTable(mydb,"medecin"))
-pj=as.data.frame(dbReadTable(mydb,"pj_item"))
-r=as.data.frame(dbReadTable(mydb,"role"))
-s=as.data.frame(dbReadTable(mydb,"service"))
-u=as.data.frame(dbReadTable(mydb,"utilisateur"))
+# c=as.data.frame(dbReadTable(mydb,"commentaire"))
+# cr=as.data.frame(dbReadTable(mydb,"commentaire_reponse"))
+# f=as.data.frame(dbReadTable(mydb,"formulaire"))
+# fh=as.data.frame(dbReadTable(mydb,"formulaire_historique"))
+# i=as.data.frame(dbReadTable(mydb,"item"))
+# m=as.data.frame(dbReadTable(mydb,"medecin"))
+# pj=as.data.frame(dbReadTable(mydb,"pj_item"))
+# r=as.data.frame(dbReadTable(mydb,"role"))
+# s=as.data.frame(dbReadTable(mydb,"service"))
+# u=as.data.frame(dbReadTable(mydb,"utilisateur"))
 
 ###Extract Data###
 
 #inputs from NodeJS will fill in the where conditions below for date range, unit, organ, curative, completed forms
 # don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
 #i don't think we should filter by date either initially in the beginning
-df=dbGetQuery(mydb,"select * from formulaire_item fi  join formulaire f on f.id = fi.id_formulaire join patient p on p.id = f.id_patient join organe o on o.id = f.id_organe join item i on fi.id_item = i.id")
-#??need to put this back into the query above...join medecin m on fi.valeur_item =m.id and i.intitule= 'Opérateur1' join service s on s.id = m.id_service where i.code = 'q99_item' and fi.valeur_item = 1 and f.date_creation BETWEEN 2018-01-01 AND 2017-01-01 and o.code = 'E' and s.id='3'
+sqlQuery=paste("select * from formulaire_item fi  join formulaire f on f.id = fi.id_formulaire join patient p on p.id = f.id_patient join organe o on o.id = f.id_organe join item i on fi.id_item = i.id where f.date_creation BETWEEN ",start_date," AND ",end_date,sep="")
+df=dbGetQuery(mydb,sqlQuery)
+#??need to put this back into the query above...join medecin m on fi.valeur_item =m.id and i.intitule= 'Opérateur1' join service s on s.id = m.id_service where i.code = 'q99_item' and fi.valeur_item = 1 and o.code= 'E' and s.id='3'
 
 ###Clean Data###
 
@@ -92,16 +96,14 @@ op=sum(final4$deaths)/sum(final4$total_patient)
 colnames(final4)[2]="d"
 colnames(final4)[3]="n"
 
-dataSet = fundata(input=final4, 
-                  alpha=0.95, 
-                  alpha2=0.80, 
+dataSet = fundata(input=final4,
+                  alpha=0.95,
+                  alpha2=0.80,
                   benchmark=op,
-                  method='approximate', 
+                  method='approximate',
                   step=1)
 
 
-funnelPlot = funplot(input=final4, 
-                   fundata=dataSet)
-funnelPlot
+#funnelPlot = funplot(input=final4,  fundata=dataSet)
 
 
