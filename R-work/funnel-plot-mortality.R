@@ -13,7 +13,7 @@ endDate = '"2019-01-01"'
 formType = '"E"'
 userLevel = 2
 userId = 8
-#plotType = "scatter"
+#plotType = "missing"
 
 # startDate=paste('"',input[[1]],'"',sep="")
 # endDate=paste('"',input[[2]],'"',sep="")
@@ -98,6 +98,8 @@ colnames(deathsbyMD3)=c("clavien_score_90","id_patient")
 final = merge(patByMd3,deathsbyMD3,by="id_patient",all.x=T)
 #fill in 999 for missing clavien 90 scores
 final$clavien_score_90[which(is.na(final$clavien_score_90))] = 999
+#count the patients missing clavien scores at 90 days
+numMiss = length(unique(final$id_patient[which(final$clavien_score_90==999)]))
 
 #get total patient counts per doctor
 final=final %>% add_count(id_medecin)
@@ -188,7 +190,10 @@ if(plotType=="scatter") {
   up2Plot
   } else if(plotType=="lo2") {
   lo2Plot
+  } else if(plotType=="missing") {
+    numMiss
   }
+
 
 
 
