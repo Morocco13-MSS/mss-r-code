@@ -1,11 +1,16 @@
+rm(list = ls())
+
 library(needs)
 needs(RMySQL)
 needs(jsonlite)
 needs(dplyr)
 needs(funnelR)
 
-start_date=paste('"',input[[1]],'"',sep="")
-end_date=paste('"',input[[2]],'"',sep="")
+#?? change below
+#start_date=paste('"',input[[1]],'"',sep="")
+#end_date=paste('"',input[[2]],'"',sep="")
+start_date = '"2018-01-01"'
+end_date = '"2019-01-01"'
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -33,6 +38,7 @@ sapply(df,class)
 sqlQuery=paste("select * from formulaire_item fi  join formulaire f on f.id = fi.id_formulaire join patient p on p.id = f.id_patient join organe o on o.id = f.id_organe join item i on fi.id_item = i.id where f.date_creation BETWEEN ",start_date," AND ",end_date,sep="")
 df=dbGetQuery(mydb,sqlQuery)
 #??need to put this back into the query above...join medecin m on fi.valeur_item =m.id and i.intitule= 'Opérateur1' join service s on s.id = m.id_service where i.code = 'q99_item' and fi.valeur_item = 1 and o.code= 'E' and s.id='3'
+
 
 ###Clean Data###
 
