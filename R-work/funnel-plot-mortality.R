@@ -6,6 +6,7 @@ needs(RMySQL)
 needs(jsonlite)
 needs(dplyr)
 needs(funnelR)
+needs(ggplot2)
 
 ##??remove the below
 startDate = '"2018-01-01"'
@@ -46,18 +47,18 @@ sapply(df,class)
 # don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
 #i don't think we should filter by date either initially in the beginning
 sqlQuery=paste("select * from patient p 
-                join formulaire f on p.id = f.id_patient
-                join formulaire_item fi on fi.id_formulaire= f.id 
-                join item i on  i.id = fi.id_item
-                join organe o on o.id = f.id_organe
-                join medecin m
-                on exists
-                (select * from item i
-                join formulaire_item fi on fi.id_item = i.id
-                where i.intitule = 'Opérateur1'
-                and m.id=fi.valeur_item)
-                join service s on s.id = m.id_service
-                join utilisateur u on u.doctorCode = m.doctorCode",
+               join formulaire f on p.id = f.id_patient
+               join formulaire_item fi on fi.id_formulaire= f.id 
+               join item i on  i.id = fi.id_item
+               join organe o on o.id = f.id_organe
+               join medecin m
+               on exists
+               (select * from item i
+               join formulaire_item fi on fi.id_item = i.id
+               where i.intitule = 'Opérateur1'
+               and m.id=fi.valeur_item)
+               join service s on s.id = m.id_service
+               join utilisateur u on u.doctorCode = m.doctorCode",
                "where f.date_creation BETWEEN",startDate,"AND",endDate,
                "AND","o.code=",formType,sep=" ")
 #and i.intitule= 'Opérateur1'
@@ -70,17 +71,38 @@ nrow(df)
 
 ###Clean Data###
 
-##get total number of patients per doctor
-keeps=c("valeur_item","id_patient","intitule")
+##get total number of patients per level
+keeps=c("valeur_item","id_patient","intitule","id_service","doctorCode")
 df2 = df[keeps]
-#first create data frame to get total patients per doctor
-patByMd = df2[which(df2$intitule=='Opérateur1'),]
+#first create data frame to get total patients per level
+patByLevel = df2[which(df2$intitule=='Opérateur1'),]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
-patByMd2=patByMd[!duplicated(patByMd),]
-keeps=c("valeur_item","id_patient")
-patByMd3 = patByMd2[keeps]
-# patByMd3=data.frame(table(patByMd2$valeur_item))
-colnames(patByMd3) = c("id_medecin","id_patient")
+patByLevel2=patByLevel[!duplicated(patByLevel),]
+
+
+
+if(userLevel==2) #overall look with all doctors
+{
+  keeps=c("valeur_item","id_patient")
+  patByLevel3 = patByLevel2[keeps]
+} else if(userLevel==1) #unit level (of current doctor) to compare doctor with other doctors in unit
+{
+  #get the service aka unit id of the current doctor
+  serviceId=unique(df$id_service[which(df$id.7==userId)])
+  patByLevel3=patByLevel2[which(patByLevel2$id_service==serviceId),]
+  keeps=c("valeur_item","id_patient")
+  patByLevel3 = patByLevel2[keeps]
+}
+
+
+#error check, exit if there are no patients
+if(nrow(patByLevel)==0) {
+  print("There are no patients associated with this userLevel.")
+  break()
+}
+
+
+colnames(patByLevel3) = c("id_medecin","id_patient")
 
 
 ##get number of deaths per doctor
@@ -95,7 +117,7 @@ df5=df4[!duplicated(df4),]
 keeps=c("valeur_item","id_patient")
 df6 = df5[keeps]
 colnames(df6)=c("clavien_score_90","id_patient")
-final = merge(patByMd3,df6,by="id_patient",all.x=T)
+final = merge(patByLevel3,df6,by="id_patient",all.x=T)
 #fill in 999 for missing clavien 90 scores
 final$clavien_score_90[which(is.na(final$clavien_score_90))] = 999
 #count the patients missing clavien scores at 90 days
@@ -138,8 +160,12 @@ dataSet = fundata(input=final4,
                   method='approximate',
                   step=1)
 
-# funnelPlot = funplot(input=final4,  fundata=dataSet)
-# funnelPlot
+funnelPlot = funplot(input=final4,  fundata=dataSet)
+funnelPlot2 = ggplot_build(funnelPlot)
+funnelPlot2$plot$labels$x = paste("Number of Patients (Missing Clavien Scores at 90 days: ",numMiss,")",sep="")
+funnelPlot2$plot$labels$y = "Mortality Rate"
+funnelPlot3 = ggplot_gtable(funnelPlot2)
+plot(funnelPlot3)
 
 ###Format for NodeJS###
 scatterPlot = final4
@@ -148,12 +174,8 @@ scatterPlot=scatterPlot[keeps]
 colnames(scatterPlot) = c("x","y")
 
 dataSet2 = dataSet
-# colnames(dataSet2)[which(colnames(dataSet2)=="benchmark")]="y_b"
 colnames(dataSet2)[which(colnames(dataSet2)=="d")]="x"
-# colnames(dataSet2)[which(colnames(dataSet2)=="up")]="y_u"
-# colnames(dataSet2)[which(colnames(dataSet2)=="lo")]="y_l"
-# colnames(dataSet2)[which(colnames(dataSet2)=="up2")]="y_u2"
-# colnames(dataSet2)[which(colnames(dataSet2)=="lo2")]="y_l2"
+
 
 keeps=c("x","benchmark")
 benchmarkPlot = dataSet2[keeps]
@@ -176,23 +198,23 @@ lo2Plot = dataSet2[keeps]
 colnames(lo2Plot)[which(colnames(lo2Plot)=="lo2")]="y"
 
 
-
-
 if(plotType=="scatter") {
   scatterPlot
-  } else if(plotType=="benchmark") {
+} else if(plotType=="benchmark") {
   benchmarkPlot
-  } else if(plotType=="up") {
+} else if(plotType=="up") {
   upPlot
-  } else if(plotType=="lo") {
+} else if(plotType=="lo") {
   loPlot
-  } else if(plotType=="up2") {
+} else if(plotType=="up2") {
   up2Plot
-  } else if(plotType=="lo2") {
+} else if(plotType=="lo2") {
   lo2Plot
-  } else if(plotType=="missing") {
-    numMiss
-  }
+} else if(plotType=="missing") {
+  numMiss
+}   
+
+
 
 
 
