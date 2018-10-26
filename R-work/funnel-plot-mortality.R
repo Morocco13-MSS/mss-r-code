@@ -13,14 +13,14 @@ endDate = '"2019-01-01"'
 formType = '"E"'
 userLevel = 2
 userId = 8
-#plotType = "missing"
+plotType = "missing"
 
 # startDate=paste('"',input[[1]],'"',sep="")
 # endDate=paste('"',input[[2]],'"',sep="")
 # formType = paste('"',input[[3]],'"',sep="")
 # userLevel = input[[4]]
 # userId = input[[5]]
-plotType = input[[6]]
+# plotType = input[[6]]
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -89,13 +89,13 @@ df3 = df[keeps]
 #231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
 #get all patients with that question and died
 #?? change to 5 for valeur_item
-deathsbyMD=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"&df3$valeur_item=='5'),]
+df4=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"&df3$valeur_item=='5'),]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
-deathsbyMD2=deathsbyMD[!duplicated(deathsbyMD),]
+df5=df4[!duplicated(df4),]
 keeps=c("valeur_item","id_patient")
-deathsbyMD3 = deathsbyMD2[keeps]
-colnames(deathsbyMD3)=c("clavien_score_90","id_patient")
-final = merge(patByMd3,deathsbyMD3,by="id_patient",all.x=T)
+df6 = df5[keeps]
+colnames(df6)=c("clavien_score_90","id_patient")
+final = merge(patByMd3,df6,by="id_patient",all.x=T)
 #fill in 999 for missing clavien 90 scores
 final$clavien_score_90[which(is.na(final$clavien_score_90))] = 999
 #count the patients missing clavien scores at 90 days
