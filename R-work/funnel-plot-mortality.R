@@ -12,7 +12,7 @@ needs(ggplot2)
 startDate = '"2018-01-01"'
 endDate = '"2019-01-01"'
 formType = '"E"'
-userLevel = 2
+userLevel = 1
 userId = 8
 plotType = "missing"
 
@@ -72,7 +72,7 @@ nrow(df)
 ###Clean Data###
 
 ##get total number of patients per level
-keeps=c("valeur_item","id_patient","intitule","id_service","doctorCode")
+keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire")
 df2 = df[keeps]
 #first create data frame to get total patients per level
 patByLevel = df2[which(df2$intitule=='Opérateur1'),]
@@ -83,15 +83,17 @@ patByLevel2=patByLevel[!duplicated(patByLevel),]
 
 if(userLevel==2) #overall look with all doctors
 {
-  keeps=c("valeur_item","id_patient")
+  keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
+  colnames(patByLevel3) = c("id_medecin","id_patient","id_formulaire")
 } else if(userLevel==1) #unit level (of current doctor) to compare doctor with other doctors in unit
 {
   #get the service aka unit id of the current doctor
   serviceId=unique(df$id_service[which(df$id.7==userId)])
   patByLevel3=patByLevel2[which(patByLevel2$id_service==serviceId),]
-  keeps=c("valeur_item","id_patient")
+  keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
+  colnames(patByLevel3) = c("id_medecin","id_patient","id_formulaire")
 }
 
 
@@ -102,11 +104,11 @@ if(nrow(patByLevel)==0) {
 }
 
 
-colnames(patByLevel3) = c("id_medecin","id_patient")
+
 
 
 ##get number of deaths per doctor
-keeps=c("valeur_item","id_patient","intitule")
+keeps=c("valeur_item","id_patient","intitule","id_formulaire")
 df3 = df[keeps]
 #231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
 #get all patients with that question and died
@@ -114,10 +116,10 @@ df3 = df[keeps]
 df4=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"&df3$valeur_item=='5'),]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 df5=df4[!duplicated(df4),]
-keeps=c("valeur_item","id_patient")
+keeps=c("valeur_item","id_patient","id_formulaire")
 df6 = df5[keeps]
-colnames(df6)=c("clavien_score_90","id_patient")
-final = merge(patByLevel3,df6,by="id_patient",all.x=T)
+colnames(df6)=c("clavien_score_90","id_patient","id_formulaire")
+final = merge(patByLevel3,df6,by=c("id_patient","id_formulaire"),all.x=T)
 #fill in 999 for missing clavien 90 scores
 final$clavien_score_90[which(is.na(final$clavien_score_90))] = 999
 #count the patients missing clavien scores at 90 days
@@ -125,18 +127,18 @@ numMiss = length(unique(final$id_patient[which(final$clavien_score_90==999)]))
 
 #get total patient counts per doctor
 final=final %>% add_count(id_medecin)
-colnames(final)[4] = "total_patient"
+colnames(final)[5] = "total_patient"
 
 #get scores per doctor
-temp=as.data.frame(table(final$clavien_score_90,final$id_medecin))
-colnames(temp) = c("clavien_score_90","deaths")
+# temp=as.data.frame(table(final$clavien_score_90,final$id_medecin))
+# colnames(temp) = c("clavien_score_90","deaths")
 
 #get deaths per doctor
-deathsbyMD4 = final %>% group_by(id_medecin) %>%
+deathsByLevel = final %>% group_by(id_medecin) %>%
   summarise(deaths= sum(clavien_score_90 == "5"))
 
 #merge
-final2 = merge(final,deathsbyMD4,by="id_medecin",all=T)
+final2 = merge(final,deathsByLevel,by="id_medecin",all=T)
 
 keeps = c("id_medecin","total_patient","deaths")
 
