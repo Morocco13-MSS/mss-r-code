@@ -16,8 +16,8 @@ dbExecute(mydb, "use mssDB")
 startDate = '"2018-01-01"'
 endDate = '"2019-01-01"'
 formType = '"E"'
-userLevel = 3
-userId = 2
+userLevel = 2
+userId = 8
 
 # startDate=paste('"',input[[1]],'"',sep="")
 # endDate=paste('"',input[[2]],'"',sep="")
