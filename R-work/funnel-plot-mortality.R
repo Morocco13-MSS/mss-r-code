@@ -14,7 +14,8 @@ endDate = '"2019-01-01"'
 formType = '"E"'
 userLevel = 1
 userId = 8
-plotType = "missing"
+plotType = "scatterPlot"
+admin=TRUE
 
 # startDate=paste('"',input[[1]],'"',sep="")
 # endDate=paste('"',input[[2]],'"',sep="")
@@ -85,7 +86,7 @@ if(userLevel==2) #overall look with all doctors
 {
   keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
-  colnames(patByLevel3) = c("id_medecin","id_patient","id_formulaire")
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
 } else if(userLevel==1) #unit level (of current doctor) to compare doctor with other doctors in unit
 {
   #get the service aka unit id of the current doctor
@@ -93,7 +94,14 @@ if(userLevel==2) #overall look with all doctors
   patByLevel3=patByLevel2[which(patByLevel2$id_service==serviceId),]
   keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
-  colnames(patByLevel3) = c("id_medecin","id_patient","id_formulaire")
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
+} 
+
+if(admin==TRUE) #show how each unit is performing against each other
+{
+  keeps=c("id_service","id_patient","id_formulaire")
+  patByLevel3 = patByLevel2[keeps]
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
 }
 
 
@@ -107,7 +115,7 @@ if(nrow(patByLevel)==0) {
 
 
 
-##get number of deaths per doctor
+##get number of deaths per level
 keeps=c("valeur_item","id_patient","intitule","id_formulaire")
 df3 = df[keeps]
 #231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
@@ -126,21 +134,21 @@ final$clavien_score_90[which(is.na(final$clavien_score_90))] = 999
 numMiss = length(unique(final$id_patient[which(final$clavien_score_90==999)]))
 
 #get total patient counts per doctor
-final=final %>% add_count(id_medecin)
+final=final %>% add_count(id_level)
 colnames(final)[5] = "total_patient"
 
 #get scores per doctor
 # temp=as.data.frame(table(final$clavien_score_90,final$id_medecin))
 # colnames(temp) = c("clavien_score_90","deaths")
 
-#get deaths per doctor
-deathsByLevel = final %>% group_by(id_medecin) %>%
+#get deaths per level
+deathsByLevel = final %>% group_by(id_level) %>%
   summarise(deaths= sum(clavien_score_90 == "5"))
 
 #merge
-final2 = merge(final,deathsByLevel,by="id_medecin",all=T)
+final2 = merge(final,deathsByLevel,by="id_level",all=T)
 
-keeps = c("id_medecin","total_patient","deaths")
+keeps = c("id_level","total_patient","deaths")
 
 final3=final2[keeps]
 
@@ -171,7 +179,8 @@ plot(funnelPlot3)
 
 ###Format for NodeJS###
 scatterPlot = final4
-keeps = c("d","n")
+scatterPlot$n2 = scatterPlot$n/scatterPlot$d
+keeps = c("d","n2")
 scatterPlot=scatterPlot[keeps]
 colnames(scatterPlot) = c("x","y")
 
