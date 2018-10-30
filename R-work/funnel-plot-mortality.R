@@ -9,20 +9,20 @@ needs(funnelR)
 needs(ggplot2)
 
 ##??remove the below
-startDate = '"2018-01-01"'
-endDate = '"2019-01-01"'
-formType = '"E"'
-userLevel = 1
-userId = 8
-plotType = "scatterPlot"
-admin=TRUE
+# startDate = '"2018-01-01"'
+# endDate = '"2019-01-01"'
+# formType = '"E"'
+# # 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
+# userLevel = 2
+# userId = 8
+# plotType = "scatterPlot"
 
-# startDate=paste('"',input[[1]],'"',sep="")
-# endDate=paste('"',input[[2]],'"',sep="")
-# formType = paste('"',input[[3]],'"',sep="")
-# userLevel = input[[4]]
-# userId = input[[5]]
-# plotType = input[[6]]
+startDate=paste('"',input[[1]],'"',sep="")
+endDate=paste('"',input[[2]],'"',sep="")
+formType = paste('"',input[[3]],'"',sep="")
+userLevel = input[[4]]
+userId = input[[5]]
+plotType = input[[6]]
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -81,12 +81,17 @@ patByLevel2=patByLevel[!duplicated(patByLevel),]
 
 
 
-if(userLevel==2) #overall look with all doctors
+if(userLevel==2) #2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
+{
+  keeps=c("id_service","id_patient","id_formulaire")
+  patByLevel3 = patByLevel2[keeps]
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
+} else if(userLevel==1) #1 is unit-level (compare against ALL  units' doctors)
 {
   keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
   colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
-} else if(userLevel==1) #unit level (of current doctor) to compare doctor with other doctors in unit
+} else if(userLevel==0) #0 is surgeon-level (compare against surgeon's unit's doctors
 {
   #get the service aka unit id of the current doctor
   serviceId=unique(df$id_service[which(df$id.7==userId)])
@@ -94,15 +99,7 @@ if(userLevel==2) #overall look with all doctors
   keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
   colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
-} 
-
-if(admin==TRUE) #show how each unit is performing against each other
-{
-  keeps=c("id_service","id_patient","id_formulaire")
-  patByLevel3 = patByLevel2[keeps]
-  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
 }
-
 
 #error check, exit if there are no patients
 if(nrow(patByLevel)==0) {
@@ -223,11 +220,3 @@ if(plotType=="scatter") {
 } else if(plotType=="missing") {
   numMiss
 }   
-
-
-
-
-
-
-
-
