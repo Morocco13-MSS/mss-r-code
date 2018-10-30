@@ -33,5 +33,11 @@ install.packages("funnelR")
 
 Please see @johnlin89 for help.
 
+## Character Encoding
 
+We need to be able to handle French characters like è, é, ç, œ, ë etc.
+
+When opening a .R file, please specify the encoding to be UTF-8.
+
+https://support.rstudio.com/hc/en-us/articles/200532197-Character-Encoding
 
