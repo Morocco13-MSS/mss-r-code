@@ -62,7 +62,6 @@ sqlQuery=paste("select * from patient p
                join utilisateur u on u.doctorCode = m.doctorCode",
                "where f.date_creation BETWEEN",startDate,"AND",endDate,
                "AND","o.code=",formType,sep=" ")
-#and i.intitule= 'Opérateur1'
 cat(sqlQuery)
 df=dbGetQuery(mydb,sqlQuery)
 #coerce distinct column names since there is overlap in column names, this will append .1, .2, etc to overlapping column names
