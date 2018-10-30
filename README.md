@@ -36,6 +36,7 @@ install.packages("RMySQL")
 install.packages("jsonlite")
 install.packages("dplyr")
 install.packages("funnelR")
+install.packages("qcc")
 ```
 
 Please see @johnlin89 for help.
