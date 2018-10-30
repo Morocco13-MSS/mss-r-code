@@ -1,6 +1,5 @@
 # mss-r-code
 
-- [ ] `git clone git@github.com:Morocco13-MSS/mss-r-code.git` (ssh) or `git clone https://github.com/Morocco1` (https)
 # R
 ## What is R?
 
@@ -18,6 +17,14 @@ You choose the mirror or the location you will download packages from. I chose h
 - [ ] Download RStudio
 This is highly recommended unless you want to do troubleshooting via command line.
 https://www.rstudio.com/products/rstudio/download/#download
+
+## Cloning Repository
+
+- [ ] In RStudio go to File --> New Project...Version Control --> Git and enter in the Repository URL according to the below and the directory on your computer you wish to put this repo (under Create project as subdirectory of:)
+
+`git clone git@github.com:Morocco13-MSS/mss-r-code.git` (ssh) or `git clone https://github.com/Morocco1` (https)
+
+- Afterwards, go to View --> Show Git in order to interact with Git via RStudio
 
 ## Package Installation
 You will need to open a script in R and run the following commands
