@@ -13,7 +13,7 @@ needs(ggplot2)
 # endDate = '"2019-01-01"'
 # formType = '"E"'
 # # 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
-# userLevel = 2
+# userLevel = 1
 # userId = 8
 # plotType = "scatterPlot"
 
@@ -28,6 +28,7 @@ plotType = input[[6]]
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
 
 mydb = dbConnect(MySQL(), user='root', password='abcd1234!', host='localhost')
+dbSendQuery(mydb,'set character set "utf8"')
 dbExecute(mydb, "use mssDB")
 sapply(df,class)
 
