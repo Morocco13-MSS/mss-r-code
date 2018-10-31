@@ -236,7 +236,7 @@ cusum(test2, decision.interval = 4, se.shift = 1)
 
 keeps=c("clavien_score_90","id_patient")
 test=final[keeps]
-test$clavien_score_90[which(test$clavien_score_90==999)]="0"
+test$clavien_score_90[which(test$clavien_score_90==999)]=""
 test$clavien_score_90[which(test$clavien_score_90==5)]="1"
 test2=cusum(test, decision.interval = 4, se.shift = 1)
 
@@ -245,8 +245,29 @@ detach(pistonrings)
 attach(pistonrings)
 diameter <- qcc.groups(diameter, sample)
 
-q <- cusum(diameter[1:25,], decision.interval = 4, se.shift = 1)
+q <- cusum(diameter[1:25,], decision.interval = 1, se.shift = 0.001)
+q <- cusum(diameter[1:25,], decision.interval = 1, se.shift = 1)
+
 summary(q)
 
+if(plotType=="ucl") {
+  uclPlot
+} else if(plotType=="upScatter") {
+  upPlot
+} else if(plotType=="target") {
+  targetPlot
+} else if(plotType=="downScatter") {
+  downPlot
+} else if(plotType=="lcl") {
+  lclPlot
+} else if(plotType=="missing") {
+  numMiss
+}
+  
+
 print(q$statistics)
+
+row.names(q$data)
+q$pos
+q$neg
 
