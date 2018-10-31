@@ -116,19 +116,21 @@ if(nrow(patByLevel)==0) {
 keeps=c("valeur_item","id_patient","intitule","id_formulaire")
 df3 = df[keeps]
 #231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
-#get all patients with that question and died
-#?? change to 5 for valeur_item
-df4=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"&df3$valeur_item=='5'),]
+#get all patients with that question
+df4=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"),]
+#count the patients missing clavien scores at 90 days
+numMiss = length(unique(df4$id_patient[which(df4$valeur_item=="")]))
+#get all patients who died
+df4=df4[which(df4$valeur_item=='5'),]
+
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 df5=df4[!duplicated(df4),]
 keeps=c("valeur_item","id_patient","id_formulaire")
 df6 = df5[keeps]
 colnames(df6)=c("clavien_score_90","id_patient","id_formulaire")
 final = merge(patByLevel3,df6,by=c("id_patient","id_formulaire"),all.x=T)
-#fill in 999 for missing clavien 90 scores
-final$clavien_score_90[which(is.na(final$clavien_score_90))] = 999
-#count the patients missing clavien scores at 90 days
-numMiss = length(unique(final$id_patient[which(final$clavien_score_90==999)]))
+#fill in "notDead" for missing clavien 90 scores
+final$clavien_score_90[which(is.na(final$clavien_score_90))] = "notDead"
 
 #get total patient counts per doctor
 final=final %>% add_count(id_level)
