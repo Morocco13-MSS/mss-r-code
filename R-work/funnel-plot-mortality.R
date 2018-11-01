@@ -13,7 +13,7 @@ needs(ggplot2)
 # endDate = '"2019-01-01"'
 # formType = '"E"'
 # # 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
-# userLevel = 0
+# userLevel = 2
 # userId = 8
 # plotType = "scatterPlot"
 
@@ -78,10 +78,18 @@ doctorCode=dbGetQuery(mydb,sqlQuery2)[1,1]
 ##get total number of patients per level
 keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire")
 df2 = df[keeps]
+#filter for curative patients
+curative = df[keeps]
+curative = curative[which(curative$intitule=='Résection'&df2$valeur_item==1),]
 #first create data frame to get total patients per level
 patByLevel = df2[which(df2$intitule=='Opérateur1'),]
+#merge to curative
+patByLevel = merge(patByLevel, curative, by=c("id_patient","id_formulaire"))
+keeps=c("valeur_item.x","id_patient","intitule.x","id_service.x","id_formulaire")
+patByLevel = patByLevel[keeps]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 patByLevel2=patByLevel[!duplicated(patByLevel),]
+colnames(patByLevel2) = c("valeur_item","id_patient","intitule","id_service","id_formulaire")
 
 
 
