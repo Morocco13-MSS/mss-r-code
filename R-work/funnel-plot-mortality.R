@@ -9,13 +9,13 @@ needs(funnelR)
 needs(ggplot2)
 
 ##??remove the below
-startDate = '"2018-01-01"'
-endDate = '"2019-01-01"'
-formType = '"E"'
-# 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
-userLevel = 0
-userId = 8
-plotType = "scatterPlot"
+# startDate = '"2018-01-01"'
+# endDate = '"2019-01-01"'
+# formType = '"E"'
+# # 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
+# userLevel = 0
+# userId = 8
+# plotType = "scatterPlot"
 
 startDate=paste('"',input[[1]],'"',sep="")
 endDate=paste('"',input[[2]],'"',sep="")
