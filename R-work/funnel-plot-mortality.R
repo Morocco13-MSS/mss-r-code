@@ -9,13 +9,13 @@ needs(funnelR)
 needs(ggplot2)
 
 ##??remove the below
-# startDate = '"2018-01-01"'
-# endDate = '"2019-01-01"'
-# formType = '"E"'
-# # 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
-# userLevel = 1
-# userId = 8
-# plotType = "scatterPlot"
+startDate = '"2018-01-01"'
+endDate = '"2019-01-01"'
+formType = '"E"'
+# 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
+userLevel = 0
+userId = 8
+plotType = "scatterPlot"
 
 startDate=paste('"',input[[1]],'"',sep="")
 endDate=paste('"',input[[2]],'"',sep="")
@@ -68,7 +68,10 @@ df=dbGetQuery(mydb,sqlQuery)
 #coerce distinct column names since there is overlap in column names, this will append .1, .2, etc to overlapping column names
 df=data.frame(df,check.names = TRUE)
 nrow(df)
-
+# Get the doctorCode of the logged in user based on userId
+sqlQuery2=paste("select doctorCode as Id from utilisateur u where u.id =", userId, sep="")
+cat(sqlQuery2)
+doctorCode=dbGetQuery(mydb,sqlQuery2)[1,1]
 
 ###Clean Data###
 
@@ -82,23 +85,22 @@ patByLevel2=patByLevel[!duplicated(patByLevel),]
 
 
 
-if(userLevel==2) #2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
-{
-  keeps=c("id_service","id_patient","id_formulaire")
-  patByLevel3 = patByLevel2[keeps]
-  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
-} else if(userLevel==1) #1 is unit-level (compare against ALL  units' doctors)
+if(userLevel==2) #2 is overall (you will see your dot AND all other dots for ALL surgeons)
 {
   keeps=c("valeur_item","id_patient","id_formulaire")
   patByLevel3 = patByLevel2[keeps]
   colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
-} else if(userLevel==0) #0 is surgeon-level (compare against surgeon's unit's doctors
+  # the below is for ADMINs who will see the results of each unit
+  # keeps=c("id_service","id_patient","id_formulaire")
+  # patByLevel3 = patByLevel2[keeps]
+  # colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
+} else if(userLevel==1|userLevel==0) #1 is unit-level (shows your dot AND other dots for other doctors in unit), #0 is surgeon-level (just see your dot on the plot and the confidence intervals are calculated with respect to doctors in that same unit)
 {
   #get the service aka unit id of the current doctor
   serviceId=unique(df$id_service[which(df$id.7==userId)])
   patByLevel3=patByLevel2[which(patByLevel2$id_service==serviceId),]
   keeps=c("valeur_item","id_patient","id_formulaire")
-  patByLevel3 = patByLevel2[keeps]
+  patByLevel3 = patByLevel3[keeps]
   colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
 }
 
@@ -178,10 +180,17 @@ plot(funnelPlot3)
 
 ###Format for NodeJS###
 scatterPlot = final4
+if(userLevel==0){
+  scatterPlot = scatterPlot[which(scatterPlot$id_level==doctorCode),]
+}
+userIdDot=scatterPlot[which(scatterPlot$id_level==doctorCode),]
 scatterPlot$n2 = scatterPlot$n/scatterPlot$d
+userIdDot$n2=userIdDot$n/userIdDot$d
 keeps = c("d","n2")
 scatterPlot=scatterPlot[keeps]
 colnames(scatterPlot) = c("x","y")
+userIdDot = userIdDot[keeps]
+colnames(userIdDot) = c("x","y")
 
 dataSet2 = dataSet
 colnames(dataSet2)[which(colnames(dataSet2)=="d")]="x"
@@ -222,4 +231,6 @@ if(plotType=="scatter") {
   lo2Plot
 } else if(plotType=="missing") {
   numMiss
+} else if(plotType=="userIdDot") {
+  userIdDot
 }   
