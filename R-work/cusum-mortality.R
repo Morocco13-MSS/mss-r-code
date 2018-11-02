@@ -13,10 +13,7 @@ needs(spcadjust)
 needs(qcr)
 needs(bda)
 
-
-
-
-##??remove the below
+##??remove the  (testing purposes)
 startDate = '"2018-01-01"'
 endDate = '"2019-01-01"'
 formType = '"E"'
@@ -25,6 +22,7 @@ userLevel = 1
 userId = 8
 plotType = "scatterPlot"
 
+# input from NodeJS
 # startDate=paste('"',input[[1]],'"',sep="")
 # endDate=paste('"',input[[2]],'"',sep="")
 # formType = paste('"',input[[3]],'"',sep="")
@@ -81,10 +79,12 @@ nrow(df)
 ###Clean Data###
 
 ##get total number of patients per level
-keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire")
+keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire","date_creation")
 df2 = df[keeps]
 #first create data frame to get total patients per level
 patByLevel = df2[which(df2$intitule=='Opérateur1'),]
+#create year-month column
+patByLevel$yyyyMM=substr(patByLevel$date_creation,1,7)
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 patByLevel2=patByLevel[!duplicated(patByLevel),]
 
@@ -319,4 +319,19 @@ test$clavien_score_90[which(test$clavien_score_90==5)]=1
 test$clavien_score_90=as.numeric(test$clavien_score_90)
 test$rate=0.10
 test$diff=test$clavien_score_90-test$rate
+
+
+# Xi ~ Po(5), i=1,...,500
+disProgObj <- create.disProg(week=1:500, observed= rpois(500,lambda=5),
+                             state=rep(0,500))
+# there should be no alarms as mean doesn't change
+res <- algo.cusum(disProgObj, control = list(range = 100:500,trans="anscombe"))
+plot(res)
+
+##pchart
+test=c(20,50,10)
+sizes=c(100,50,100)
+qcc(test,type="p",sizes=sizes)
+
+
 
