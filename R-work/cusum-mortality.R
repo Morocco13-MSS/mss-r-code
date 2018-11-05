@@ -139,12 +139,6 @@ if(length(removal)!=0){
   result2=result
 }
 
-# #get all patients who died
-# result3=result2[which(result2$valeur_item=='5'),]
-# #remove any duplicates in case the same patient is repeated twice per a given doctor
-# result4=result3[!duplicated(result3),]
-# final = merge(df8,result4,by=c("id_patient","id_formulaire"),all.x=T)
-# keeps=c("id_patient","id_formulaire","doctorCode.x","id_service.x","intitule","valeur_item","date_creation","yyyyMM")
 final=result2
 #fill in 0 for not dead and 1 for dead
 final$deathFlag=0
