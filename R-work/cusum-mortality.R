@@ -9,14 +9,14 @@ needs(funnelR)
 needs(ggplot2)
 
 ##??remove the  (testing purposes)
-# startDate = '"2018-01-01"'
-# endDate = '"2019-01-01"'
-# formType = '"E"'
-# #userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
-# userLevel = 2
-# #taken as the utilisateur.id of the specific user logging in
-# userId = 12
-# plotType = "cusumLine"
+startDate = '"2018-01-01"'
+endDate = '"2019-01-01"'
+formType = '"E"'
+#userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
+userLevel = 2
+#taken as the utilisateur.id of the specific user logging in
+userId = 12
+plotType = "cusumLine"
 
 #input from NodeJS (remove commenting when done testing)
 startDate=paste('"',input[[1]],'"',sep="")
@@ -184,6 +184,7 @@ plot(final$patNum,final$acc_sum,type="l",xlab="Patient Number",ylab="Cumulative 
      ,sub=paste("Missing: ",numMiss,sep=""))
 lines(final$patNum,final$ucl,col="red")
 lines(final$patNum,final$lcl,col="blue")
+
 points(alerts$patNum,alerts$acc_sum,col="red")
 
 #Format for NodeJS
