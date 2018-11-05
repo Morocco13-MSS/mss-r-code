@@ -9,26 +9,26 @@ needs(funnelR)
 needs(ggplot2)
 
 ##??remove the  (testing purposes)
-startDate = '"2018-01-01"'
-endDate = '"2019-01-01"'
-formType = '"E"'
-#userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
-userLevel = 2
-#taken as the utilisateur.id of the specific user logging in
-userId = 8
-plotType = "scatterPlot"
+# startDate = '"2018-01-01"'
+# endDate = '"2019-01-01"'
+# formType = '"E"'
+# #userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
+# userLevel = 2
+# #taken as the utilisateur.id of the specific user logging in
+# userId = 8
+# plotType = "scatterPlot"
 
 #set the upper and lower control limits (ucl and lcl)
 ucl=3
 lcl=0
 
-# input from NodeJS (remove commenting when done testing)
-# startDate=paste('"',input[[1]],'"',sep="")
-# endDate=paste('"',input[[2]],'"',sep="")
-# formType = paste('"',input[[3]],'"',sep="")
-# userLevel = input[[4]]
-# userId = input[[5]]
-# plotType = input[[6]]
+#input from NodeJS (remove commenting when done testing)
+startDate=paste('"',input[[1]],'"',sep="")
+endDate=paste('"',input[[2]],'"',sep="")
+formType = paste('"',input[[3]],'"',sep="")
+userLevel = input[[4]]
+userId = input[[5]]
+plotType = input[[6]]
 
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -177,14 +177,15 @@ toJSON(upPlot)
 loPlot=final[c("patNum","lcl")]
 colnames(loPlot)=c("x","y")
 toJSON(loPlot)
-plot(final$patNum,final$acc_sum,type="l",xlab="Patient Number",ylab="Cumulative Sum (Observed-Expected)",main="Cusum Plot for Morality Ratio")
+plot(final$patNum,final$acc_sum,type="l",xlab="Patient Number",ylab="Cumulative Sum Mortality (Observed-Expected)",main="Cusum Plot for Mortality"
+     ,sub=paste("Missing: ",numMiss,sep=""))
 lines(final$patNum,final$ucl,col="red")
 lines(final$patNum,final$lcl,col="blue")
 #determine alerts
 alerts=cusumPlot[which(cusumPlot$y>ucl),]
 
 ###Format for NodeJS###
-if(plotType=="cusum") {
+if(plotType=="cusumLine") {
   cusumPlot
 } else if(plotType=="ucl") {
   upPlot
