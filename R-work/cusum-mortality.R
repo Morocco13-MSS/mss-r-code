@@ -8,14 +8,21 @@ needs(dplyr)
 needs(funnelR)
 needs(ggplot2)
 
-##??remove the below
-startDate = '"2018-01-01"'
-endDate = '"2019-01-01"'
-formType = '"E"'
-# 0 is surgeon-level (compare against surgeon's unit's doctors),  1 is unit-level (compare against ALL  units' doctors), 2 is overall (only for ADMIN and compares results by unit ie only 4 points for the 4 units)
-userLevel = 0
-userId = 8
-plotType = "scatterPlot"
+##??remove the  (testing purposes)
+# startDate = '"2018-01-01"'
+# endDate = '"2019-01-01"'
+# formType = '"E"'
+# #userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
+# userLevel = 2
+# #taken as the utilisateur.id of the specific user logging in
+# userId = 8
+# plotType = "scatterPlot"
+
+#set the upper and lower control limits (ucl and lcl)
+ucl=3
+lcl=0
+
+#input from NodeJS (remove commenting when done testing)
 
 startDate=paste('"',input[[1]],'"',sep="")
 endDate=paste('"',input[[2]],'"',sep="")
@@ -27,6 +34,7 @@ plotType = input[[6]]
 #close all connections. only 16 can be open at one time
 lapply( dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
 
+#connect to the database
 mydb = dbConnect(MySQL(), user='root', password='abcd1234!', host='localhost')
 dbSendQuery(mydb,'set character set "utf8"')
 dbExecute(mydb, "use mssDB")
@@ -46,7 +54,7 @@ sapply(df,class)
 ###Extract Data###
 
 #inputs from NodeJS will fill in the where conditions below for date range, unit, organ, curative, completed forms
-# don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
+#don't filter by doctor/unit since they want different views and each point is a doctor or unit, however I still need the joins
 #i don't think we should filter by date either initially in the beginning
 sqlQuery=paste("select * from patient p 
                join formulaire f on p.id = f.id_patient
@@ -65,10 +73,11 @@ sqlQuery=paste("select * from patient p
                "AND","o.code=",formType,sep=" ")
 cat(sqlQuery)
 df=dbGetQuery(mydb,sqlQuery)
-#coerce distinct column names since there is overlap in column names, this will append .1, .2, etc to overlapping column names
+
+#coerce distinct column names since there is overlap in column names, this will append .1, .2, etc to duplicate column names
 df=data.frame(df,check.names = TRUE)
 nrow(df)
-# Get the doctorCode of the logged in user based on userId
+#get the doctorCode of the logged in user based on userId
 sqlQuery2=paste("select doctorCode as Id from utilisateur u where u.id =", userId, sep="")
 cat(sqlQuery2)
 doctorCode=dbGetQuery(mydb,sqlQuery2)[1,1]
@@ -76,48 +85,61 @@ doctorCode=dbGetQuery(mydb,sqlQuery2)[1,1]
 ###Clean Data###
 
 ##get total number of patients per level
-keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire")
+
+keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire","date_creation")
 df2 = df[keeps]
-#first create data frame to get total patients per level
+#filter for curative patients
+curative = df[keeps]
+curative = curative[which(curative$intitule=='Résection'&df2$valeur_item==1),]
+
+#create data frame to get total patients per level
 patByLevel = df2[which(df2$intitule=='Opérateur1'),]
+#get month and year of each form
+patByLevel$yyyyMM=substr(patByLevel$date_creation,1,7)
+
+#merge to curative in order to filter for curative patients
+patByLevel=merge(curative,patByLevel,by=c("id_patient","id_formulaire"),all.x=TRUE)
+keeps=c("valeur_item.x","id_patient","intitule.x","id_service.x","id_formulaire","date_creation.x","yyyyMM")
+patByLevel = patByLevel[keeps]
 #remove any duplicates in case the same patient is repeated twice per a given doctor
 patByLevel2=patByLevel[!duplicated(patByLevel),]
+colnames(patByLevel2) = c("valeur_item","id_patient","intitule","id_service","id_formulaire","date_creation","yyyyMM")
 
-
-
-if(userLevel==2) #2 is overall (you will see your dot AND all other dots for ALL surgeons)
+if(userLevel==2) #2 is overall (cusum for all results)
 {
-  keeps=c("valeur_item","id_patient","id_formulaire")
+  keeps=c("valeur_item","id_patient","id_formulaire","date_creation","yyyyMM")
   patByLevel3 = patByLevel2[keeps]
-  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire","date_creation","yyyyMM")
   # the below is for ADMINs who will see the results of each unit
   # keeps=c("id_service","id_patient","id_formulaire")
   # patByLevel3 = patByLevel2[keeps]
   # colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
-} else if(userLevel==1|userLevel==0) #1 is unit-level (shows your dot AND other dots for other doctors in unit), #0 is surgeon-level (just see your dot on the plot and the confidence intervals are calculated with respect to doctors in that same unit)
+} else if(userLevel==1) #1 is unit-level (cusum for all results in unit)
 {
   #get the service aka unit id of the current doctor
   serviceId=unique(df$id_service[which(df$id.7==userId)])
   patByLevel3=patByLevel2[which(patByLevel2$id_service==serviceId),]
-  keeps=c("valeur_item","id_patient","id_formulaire")
+  keeps=c("valeur_item","id_patient","id_formulaire","date_creation","yyyyMM")
   patByLevel3 = patByLevel3[keeps]
-  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire")
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire","date_creation","yyyyMM")
+} else if(userLevel==0) #0 is surgeon level (cusum for only surgeon's patients)
+{
+  patByLevel3=patByLevel2[which(patByLevel2$valeur_item==doctorCode),]
+  keeps=c("valeur_item","id_patient","id_formulaire","date_creation","yyyyMM")
+  patByLevel3 = patByLevel3[keeps]
+  colnames(patByLevel3) = c("id_level","id_patient","id_formulaire","date_creation","yyyyMM")
 }
-
+  
 #error check, exit if there are no patients
 if(nrow(patByLevel)==0) {
   print("There are no patients associated with this userLevel.")
-  break()
+  stop()
 }
-
-
-
-
 
 ##get number of deaths per level
 keeps=c("valeur_item","id_patient","intitule","id_formulaire")
 df3 = df[keeps]
-#231	q231_item	Score de Clavien maximal dans les 90 jours postopératoires
+
 #get all patients with that question
 df4=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"),]
 #count the patients missing clavien scores at 90 days
@@ -131,155 +153,51 @@ keeps=c("valeur_item","id_patient","id_formulaire")
 df6 = df5[keeps]
 colnames(df6)=c("clavien_score_90","id_patient","id_formulaire")
 final = merge(patByLevel3,df6,by=c("id_patient","id_formulaire"),all.x=T)
-#fill in "notDead" for missing clavien 90 scores
-final$clavien_score_90[which(is.na(final$clavien_score_90))] = "notDead"
 
-#get total patient counts per doctor
+#fill in 0 for not dead and 1 for dead
+final$clavien_score_90[which(is.na(final$clavien_score_90))] = 0
+final$clavien_score_90[which(final$clavien_score_90==5)] = 1
+#order by date_creation and id_patient
+final=final[(order(final$date_creation,final$id_patient)),]
+
+# get total patient counts per doctor
 final=final %>% add_count(id_level)
-colnames(final)[5] = "total_patient"
+colnames(final)[7] = "total_patient"
 
-#get scores per doctor
-# temp=as.data.frame(table(final$clavien_score_90,final$id_medecin))
-# colnames(temp) = c("clavien_score_90","deaths")
-
-#get deaths per level
-deathsByLevel = final %>% group_by(id_level) %>%
-  summarise(deaths= sum(clavien_score_90 == "5"))
-
-#merge
-final2 = merge(final,deathsByLevel,by="id_level",all=T)
-
-keeps = c("id_level","total_patient","deaths")
-
-final3=final2[keeps]
-
-#remove duplicates
-final4=final3[!duplicated(final3),]
-
-###Data Analysis###
-
-#calculate overall proportion
-op=sum(final4$deaths)/sum(final4$total_patient)
-
-colnames(final4)[2]="d"
-colnames(final4)[3]="n"
-
-dataSet = fundata(input=final4,
-                  alpha=0.95,
-                  alpha2=0.80,
-                  benchmark=op,
-                  method='approximate',
-                  step=1)
-
-funnelPlot = funplot(input=final4,  fundata=dataSet)
-funnelPlot2 = ggplot_build(funnelPlot)
-funnelPlot2$plot$labels$x = paste("Number of Patients (Missing Clavien Scores at 90 days: ",numMiss,")",sep="")
-funnelPlot2$plot$labels$y = "Mortality Rate"
-funnelPlot3 = ggplot_gtable(funnelPlot2)
-plot(funnelPlot3)
+# get CUSUM
+final$rate=0.169
+final$clavien_score_90=as.numeric(final$clavien_score_90)
+final$diff=final$clavien_score_90-final$rate
+final$patNum=1:nrow(final)
+final=within(final, acc_sum <- cumsum(diff))
+final$acc_sum=as.numeric(final$acc_sum)
+final$ucl=rep(ucl,nrow(final))
+final$lcl=rep(lcl,nrow(final))
+cusumPlot=final[c("patNum","acc_sum")]
+colnames(cusumPlot)=c("x","y")
+toJSON(cusumPlot)
+upPlot=final[c("patNum","ucl")]
+colnames(upPlot)=c("x","y")
+toJSON(upPlot)
+loPlot=final[c("patNum","lcl")]
+colnames(loPlot)=c("x","y")
+toJSON(loPlot)
+plot(final$patNum,final$acc_sum,type="l",xlab="Patient Number",ylab="Cumulative Sum Mortality (Observed-Expected)",main="Cusum Plot for Mortality"
+     ,sub=paste("Missing: ",numMiss,sep=""))
+lines(final$patNum,final$ucl,col="red")
+lines(final$patNum,final$lcl,col="blue")
+#determine alerts
+alerts=cusumPlot[which(cusumPlot$y>ucl),]
 
 ###Format for NodeJS###
-scatterPlot = final4
-if(userLevel==0){
-  scatterPlot = scatterPlot[which(scatterPlot$id_level==doctorCode),]
-}
-userIdDot=scatterPlot[which(scatterPlot$id_level==doctorCode),]
-scatterPlot$n2 = scatterPlot$n/scatterPlot$d
-userIdDot$n2=userIdDot$n/userIdDot$d
-keeps = c("d","n2")
-scatterPlot=scatterPlot[keeps]
-colnames(scatterPlot) = c("x","y")
-userIdDot = userIdDot[keeps]
-colnames(userIdDot) = c("x","y")
-
-dataSet2 = dataSet
-colnames(dataSet2)[which(colnames(dataSet2)=="d")]="x"
-
-
-keeps=c("x","benchmark")
-benchmarkPlot = dataSet2[keeps]
-colnames(benchmarkPlot)[which(colnames(benchmarkPlot)=="benchmark")]="y"
-
-keeps=c("x","up")
-upPlot = dataSet2[keeps]
-colnames(upPlot)[which(colnames(upPlot)=="up")]="y"
-
-keeps=c("x","lo")
-loPlot = dataSet2[keeps]
-colnames(loPlot)[which(colnames(loPlot)=="lo")]="y"
-
-keeps=c("x","up2")
-up2Plot = dataSet2[keeps]
-colnames(up2Plot)[which(colnames(up2Plot)=="up2")]="y"
-
-keeps=c("x","lo2")
-lo2Plot = dataSet2[keeps]
-colnames(lo2Plot)[which(colnames(lo2Plot)=="lo2")]="y"
-
-
-if(plotType=="scatter") {
-  scatterPlot
-} else if(plotType=="benchmark") {
-  benchmarkPlot
-} else if(plotType=="up") {
+if(plotType=="cusumLine") {
+  cusumPlot
+} else if(plotType=="ucl") {
   upPlot
-} else if(plotType=="lo") {
-  loPlot
-} else if(plotType=="up2") {
-  up2Plot
-} else if(plotType=="lo2") {
-  lo2Plot
-} else if(plotType=="missing") {
-  numMiss
-} else if(plotType=="userIdDot") {
-  userIdDot
-}   
-
-
-######
-
-final4$rate = final4$d/final4$n
-test = final4$rate
-test2=as.data.frame(test)
-cusum(test2, decision.interval = 4, se.shift = 1)
-
-keeps=c("clavien_score_90","id_patient")
-test=final[keeps]
-test$clavien_score_90[which(test$clavien_score_90==999)]=""
-test$clavien_score_90[which(test$clavien_score_90==5)]="1"
-test2=cusum(test, decision.interval = 4, se.shift = 1)
-
-data(pistonrings)
-detach(pistonrings)
-attach(pistonrings)
-diameter <- qcc.groups(diameter, sample)
-
-q <- cusum(diameter[1:25,], decision.interval = 1, se.shift = 0.001)
-q <- cusum(diameter[1:25,], decision.interval = 1, se.shift = 1)
-
-summary(q)
-
-if(plotType=="ucl") {
-  uclPlot
-} else if(plotType=="upScatter") {
-  upPlot
-} else if(plotType=="target") {
-  targetPlot
-} else if(plotType=="downScatter") {
-  downPlot
 } else if(plotType=="lcl") {
-  lclPlot
+  loPlot
+} else if(plotType=="alerts") {
+  alerts
 } else if(plotType=="missing") {
   numMiss
-}
-  
-
-print(q$statistics)
-
-row.names(q$data)
-q$pos
-q$neg
-
-test=data.frame(pat=c(1,2,3,4,5,6,7,8,9,10), oe=c(-0.1,-0.15,-0.21,0.65,-0.2,-0.12,-0.45,0.93,-0.2,-0.21))
-
-test2=cusum(test,decision.interval = 1, se.shift = 0.001)
+}   
