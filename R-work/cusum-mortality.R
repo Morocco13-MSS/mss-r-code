@@ -23,6 +23,7 @@ ucl=3
 lcl=0
 
 #input from NodeJS (remove commenting when done testing)
+
 startDate=paste('"',input[[1]],'"',sep="")
 endDate=paste('"',input[[2]],'"',sep="")
 formType = paste('"',input[[3]],'"',sep="")
@@ -72,6 +73,7 @@ sqlQuery=paste("select * from patient p
                "AND","o.code=",formType,sep=" ")
 cat(sqlQuery)
 df=dbGetQuery(mydb,sqlQuery)
+
 #coerce distinct column names since there is overlap in column names, this will append .1, .2, etc to duplicate column names
 df=data.frame(df,check.names = TRUE)
 nrow(df)
@@ -83,6 +85,7 @@ doctorCode=dbGetQuery(mydb,sqlQuery2)[1,1]
 ###Clean Data###
 
 ##get total number of patients per level
+
 keeps=c("valeur_item","id_patient","intitule","id_service","id_formulaire","date_creation")
 df2 = df[keeps]
 #filter for curative patients
@@ -136,6 +139,7 @@ if(nrow(patByLevel)==0) {
 ##get number of deaths per level
 keeps=c("valeur_item","id_patient","intitule","id_formulaire")
 df3 = df[keeps]
+
 #get all patients with that question
 df4=df3[which(df3$intitule=="Score de Clavien maximal dans les 90 jours postopératoires"),]
 #count the patients missing clavien scores at 90 days
@@ -149,6 +153,7 @@ keeps=c("valeur_item","id_patient","id_formulaire")
 df6 = df5[keeps]
 colnames(df6)=c("clavien_score_90","id_patient","id_formulaire")
 final = merge(patByLevel3,df6,by=c("id_patient","id_formulaire"),all.x=T)
+
 #fill in 0 for not dead and 1 for dead
 final$clavien_score_90[which(is.na(final$clavien_score_90))] = 0
 final$clavien_score_90[which(final$clavien_score_90==5)] = 1
@@ -196,6 +201,3 @@ if(plotType=="cusumLine") {
 } else if(plotType=="missing") {
   numMiss
 }   
-
-
-
