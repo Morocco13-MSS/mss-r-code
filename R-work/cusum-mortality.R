@@ -27,7 +27,7 @@ userId = input[[5]]
 plotType = input[[6]]
 
 #set the upper and lower control limits (ucl and lcl)
-ucl=3
+ucl=5
 lcl=0
 
 #close all connections. only 16 can be open at one time
