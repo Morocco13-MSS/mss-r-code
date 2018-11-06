@@ -190,7 +190,11 @@ if(plotType=="cusumLine") {
 } else if(plotType=="lcl") {
   loPlot
 } else if(plotType=="alerts") {
-  alerts
+  if(nrow(alerts==0)){
+    ""
+  } else {
+    alerts
+  }
 } else if(plotType=="missing") {
   numMiss
 }
