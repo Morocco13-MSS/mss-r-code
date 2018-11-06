@@ -9,22 +9,22 @@ needs(funnelR)
 needs(ggplot2)
 
 ##??remove the  (testing purposes)
-# startDate = '"2018-01-01"'
-# endDate = '"2019-01-01"'
-# formType = '"E"'
-# #userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
-# userLevel = 2
-# #taken as the utilisateur.id of the specific user logging in
-# userId = 12
-# plotType = "cusumLine"
+startDate = '"2018-01-01"'
+endDate = '"2019-01-01"'
+formType = '"E"'
+#userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
+userLevel = 2
+#taken as the utilisateur.id of the specific user logging in
+userId = 12
+plotType = "cusumLine"
 
 #input from NodeJS (remove commenting when done testing)
-startDate=paste('"',input[[1]],'"',sep="")
-endDate=paste('"',input[[2]],'"',sep="")
-formType = paste('"',input[[3]],'"',sep="")
-userLevel = input[[4]]
-userId = input[[5]]
-plotType = input[[6]]
+# startDate=paste('"',input[[1]],'"',sep="")
+# endDate=paste('"',input[[2]],'"',sep="")
+# formType = paste('"',input[[3]],'"',sep="")
+# userLevel = input[[4]]
+# userId = input[[5]]
+# plotType = input[[6]]
 
 #close all connections. only 16 can be open at one time
 lapply(dbListConnections( dbDriver( drv = "MySQL")), dbDisconnect)
@@ -209,12 +209,7 @@ colnames(scatterPlot) = c("x","y")
 userIdDot = userIdDot[keeps]
 colnames(userIdDot) = c("x","y")
 
-unitScatterPlot=finalUnit3
-unitScatterPlot$n2 = unitScatterPlot$deathsUnit/unitScatterPlot$total_patient_unit
-keeps = c("total_patient_unit","n2")
-unitScatterPlot=unitScatterPlot[keeps]
-colnames(unitScatterPlot) = c("x","y")
-unitScatterPlot=unique(unitScatterPlot)
+
 
 dataSet2 = dataSet
 colnames(dataSet2)[which(colnames(dataSet2)=="d")]="x"
@@ -240,23 +235,92 @@ keeps=c("x","lo2")
 lo2Plot = dataSet2[keeps]
 colnames(lo2Plot)[which(colnames(lo2Plot)=="lo2")]="y"
 
+if(userLevel==2){
+  unitScatterPlot=finalUnit3
+  unitScatterPlot2=unitScatterPlot
+  unitScatterPlot2$doctorCode="dummy"
+  colnames(unitScatterPlot2)[3]="d"
+  colnames(unitScatterPlot2)[4]="n"
+  unitScatterPlot2=unique(unitScatterPlot2)
+  unitScatterPlot3=rbind(unitScatterPlot2,finalMd3)
+  unitdataSet = fundata(input=unitScatterPlot3,
+                        alpha=0.95,
+                        alpha2=0.80,
+                        benchmark=op,
+                        method='approximate',
+                        step=1)
+  
+  funnelPlot = funplot(input=unitScatterPlot3,  fundata=unitdataSet)
+  
+  unitDataSet2 = unitdataSet
+  colnames(unitDataSet2)[which(colnames(unitDataSet2)=="d")]="x"
+  
+  
+  keeps=c("x","benchmark")
+  unitBenchmarkPlot = unitDataSet2[keeps]
+  colnames(unitBenchmarkPlot)[which(colnames(unitBenchmarkPlot)=="benchmark")]="y"
+  
+  keeps=c("x","up")
+  unitUpPlot = unitDataSet2[keeps]
+  colnames(unitUpPlot)[which(colnames(unitUpPlot)=="up")]="y"
+  
+  keeps=c("x","lo")
+  unitLoPlot = unitDataSet2[keeps]
+  colnames(unitLoPlot)[which(colnames(unitLoPlot)=="lo")]="y"
+  
+  keeps=c("x","up2")
+  unitUp2Plot = unitDataSet2[keeps]
+  colnames(unitUp2Plot)[which(colnames(unitUp2Plot)=="up2")]="y"
+  
+  keeps=c("x","lo2")
+  unitLo2Plot = unitDataSet2[keeps]
+  colnames(unitLo2Plot)[which(colnames(unitLo2Plot)=="lo2")]="y"
+  
+  unitScatterPlot4=finalUnit3
+  unitScatterPlot4$n2 = unitScatterPlot4$deathsUnit/unitScatterPlot4$total_patient_unit
+  keeps = c("total_patient_unit","n2")
+  unitScatterPlot4=unitScatterPlot4[keeps]
+  colnames(unitScatterPlot4) = c("x","y")
+  unitScatterPlot4=unique(unitScatterPlot4)
+}
 
-if(plotType=="scatter") {
-  scatterPlot
-} else if(plotType=="benchmark") {
-  benchmarkPlot
-} else if(plotType=="up") {
-  upPlot
-} else if(plotType=="lo") {
-  loPlot
-} else if(plotType=="up2") {
-  up2Plot
-} else if(plotType=="lo2") {
-  lo2Plot
-} else if(plotType=="missing") {
-  numMiss
-} else if(plotType=="userIdDot") {
-  userIdDot
-} else if(plotType=="allUnitsDots") {
-  unitScatterPlot
-}   
+if(userLevel!=2){
+  if(plotType=="scatter") {
+    scatterPlot
+  } else if(plotType=="benchmark") {
+    benchmarkPlot
+  } else if(plotType=="up") {
+    upPlot
+  } else if(plotType=="lo") {
+    loPlot
+  } else if(plotType=="up2") {
+    up2Plot
+  } else if(plotType=="lo2") {
+    lo2Plot
+  } else if(plotType=="missing") {
+    numMiss
+  } else if(plotType=="userIdDot") {
+    userIdDot
+  }
+} else if(userLevel==2){
+  if(plotType=="scatter") {
+    scatterPlot
+  } else if(plotType=="benchmark") {
+    unitBenchmarkPlot
+  } else if(plotType=="up") {
+    unitUpPlot
+  } else if(plotType=="lo") {
+    unitLoPlot
+  } else if(plotType=="up2") {
+    unitUp2Plot
+  } else if(plotType=="lo2") {
+    unitLo2Plot
+  } else if(plotType=="missing") {
+    numMiss
+  } else if(plotType=="userIdDot") {
+    userIdDot
+  } else if(plotType=="allUnitsDots") {
+    unitScatterPlot4
+  }
+}
+  
