@@ -173,15 +173,15 @@ points(alerts$patNum,alerts$acc_sum,col="red")
 #Format for NodeJS
 cusumPlot=final[c("patNum","acc_sum")]
 colnames(cusumPlot)=c("x","y")
-#toJSON(cusumPlot)
+# toJSON(cusumPlot)
 upPlot=final[c("patNum","ucl")]
 colnames(upPlot)=c("x","y")
-#toJSON(upPlot)
+# toJSON(upPlot)
 loPlot=final[c("patNum","lcl")]
 colnames(loPlot)=c("x","y")
-#toJSON(loPlot)
+# toJSON(loPlot)
 colnames(alerts)=c("x","y")
-#toJSON(alerts)
+# toJSON(alerts)
 
 if(plotType=="cusumLine") {
   cusumPlot
@@ -193,4 +193,4 @@ if(plotType=="cusumLine") {
   alerts
 } else if(plotType=="missing") {
   numMiss
-}   
+}
