@@ -13,7 +13,7 @@ needs(ggplot2)
 # endDate = '"2019-01-01"'
 # formType = '"E"'
 # #userLevel is either 0 for surgeon level, 1 for unit level, or 2 for all
-# userLevel = 0
+# userLevel = 2
 # #taken as the utilisateur.id of the specific user logging in
 # userId = 12
 # plotType = "cusumLine"
@@ -191,7 +191,7 @@ if(plotType=="cusumLine") {
   loPlot
 } else if(plotType=="alerts") {
   if(nrow(alerts)==0){
-    toJSON(alerts)
+    alerts=""
   } else {
     alerts
   }
