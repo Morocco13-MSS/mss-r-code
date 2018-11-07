@@ -59,3 +59,5 @@ https://stackoverflow.com/questions/10077689/r-cmd-on-windows-7-error-r-is-not-r
 
 http://yizhexu.com/2017/02/r-path/
 
+Following adding R to PATH, you need to completely restart NodeJS.
+
