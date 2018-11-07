@@ -49,3 +49,11 @@ When opening a .R file, please specify the encoding to be UTF-8.
 
 https://support.rstudio.com/hc/en-us/articles/200532197-Character-Encoding
 
+Need to set environment to use UTF-8??
+
+## Windows Special Instructions
+
+In order for NodeJS to call R, you need to add R to PATH.
+
+https://stackoverflow.com/questions/10077689/r-cmd-on-windows-7-error-r-is-not-recognized-as-an-internal-or-external-comm
+
