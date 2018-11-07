@@ -57,3 +57,5 @@ In order for NodeJS to call R, you need to add R to PATH.
 
 https://stackoverflow.com/questions/10077689/r-cmd-on-windows-7-error-r-is-not-recognized-as-an-internal-or-external-comm
 
+http://yizhexu.com/2017/02/r-path/
+
