@@ -49,7 +49,7 @@ When opening a .R file, please specify the encoding to be UTF-8.
 
 https://support.rstudio.com/hc/en-us/articles/200532197-Character-Encoding
 
-Need to set environment to use UTF-8?? or set encoding of df$intitule to UTF-8 if within Rstudio session.
+Need to set environment to use UTF-8?? or set encoding of df$intitule to UTF-8 if within Rstudio session, but I think this only works for that particular session.
 
 ## Windows Special Instructions
 
